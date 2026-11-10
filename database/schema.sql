@@ -95,6 +95,23 @@ CREATE TABLE IF NOT EXISTS sync_log (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- Usuarios del sistema (login). La contraseña se guarda como hash scrypt
+-- con sal aleatoria, nunca en texto plano.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS users (
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  full_name      VARCHAR(80)  NOT NULL,
+  email          VARCHAR(120) NOT NULL,
+  password_hash  VARCHAR(200) NOT NULL,
+  role           ENUM('admin','analista') NOT NULL DEFAULT 'analista',
+  last_login     DATETIME     NULL,
+  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_users_email UNIQUE (email),
+  CONSTRAINT chk_users_email CHECK (email LIKE '%_@_%._%'),
+  CONSTRAINT chk_users_name CHECK (CHAR_LENGTH(full_name) >= 3)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- Datos iniciales: principales empresas del NASDAQ-100
 -- ---------------------------------------------------------------------
 INSERT IGNORE INTO stocks (symbol, name) VALUES

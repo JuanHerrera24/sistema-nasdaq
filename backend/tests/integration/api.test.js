@@ -9,6 +9,10 @@ const assert = require('node:assert');
 const { installFakeFetch } = require('../helpers/fakeMarket');
 const app = require('../../src/app');
 const repo = require('../../src/repositories/stockRepository');
+const { signToken } = require('../../src/services/authService');
+
+// Sesión válida para las rutas protegidas
+const token = signToken({ id: 1, email: 'qa@nasdaq.com', fullName: 'QA', role: 'analista' });
 
 let base;
 let server;
@@ -36,8 +40,8 @@ test.beforeEach((t) => {
 test.afterEach(() => fake.restore());
 
 const api = (path, options = {}) => fetch(base + path, {
-  headers: { 'Content-Type': 'application/json' },
   ...options,
+  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers },
 });
 
 test('GET /api/health responde ok', async () => {

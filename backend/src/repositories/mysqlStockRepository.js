@@ -140,3 +140,27 @@ module.exports = {
   getDashboard, getRecommendationHistory,
   startSyncLog, finishSyncLog, getLastSync,
 };
+
+// ---------------- Usuarios (login) ----------------
+const toUser = (r) => r && ({ id: r.id, fullName: r.full_name, email: r.email, passwordHash: r.password_hash, role: r.role, lastLogin: r.last_login });
+
+async function findUserByEmail(email) {
+  const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+  return toUser(rows[0]) || null;
+}
+
+async function createUser({ fullName, email, passwordHash, role = 'analista' }) {
+  const [res] = await pool.query(
+    'INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+    [fullName, email, passwordHash, role]
+  );
+  return { id: res.insertId, fullName, email, role };
+}
+
+async function touchLogin(userId) {
+  await pool.query('UPDATE users SET last_login = UTC_TIMESTAMP() WHERE id = ?', [userId]);
+}
+
+module.exports.findUserByEmail = findUserByEmail;
+module.exports.createUser = createUser;
+module.exports.touchLogin = touchLogin;

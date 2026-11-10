@@ -3,99 +3,254 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistema NASDAQ</title>
+  <title>NASDAQ Insight · Sistema de análisis bursátil</title>
+  <meta name="description" content="Sistema de automatización NASDAQ: datos reales, gráficos, indicadores técnicos y recomendaciones de inversión.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b82f6'/%3E%3Cpath d='M7 22l6-7 4 4 8-10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">N</span>
-      <div>
-        <h1>Sistema NASDAQ</h1>
-        <p class="muted" id="lastSync">Última sincronización: —</p>
-      </div>
-    </div>
-    <div class="actions">
-      <form id="addForm" class="inline-form">
-        <input id="addSymbol" maxlength="10" placeholder="Agregar símbolo (ej: AMD)" autocomplete="off" required>
-        <button type="submit">Agregar</button>
-      </form>
-      <button id="syncBtn" class="secondary">Sincronizar ahora</button>
-    </div>
-  </header>
 
-  <main>
-    <section class="kpis" id="kpis"></section>
-
-    <section class="card">
-      <div class="card-head">
-        <h2>Acciones en seguimiento</h2>
-        <span class="muted small">Se actualizan automáticamente con valores reales del NASDAQ</span>
+  <!-- ================= LOGIN ================= -->
+  <section id="authView" class="auth hidden">
+    <div class="auth-hero">
+      <div class="auth-brand">
+        <span class="logo-mark"><svg viewBox="0 0 24 24"><path d="M3 17l6-7 4 4 8-10"/><path d="M15 4h6v6"/></svg></span>
+        <span>NASDAQ <b>Insight</b></span>
       </div>
-      <div class="table-wrap">
-        <table id="stocksTable">
-          <thead>
-            <tr>
-              <th>Símbolo</th><th>Empresa</th><th class="num">Precio (USD)</th>
-              <th class="num">Cambio</th><th class="num">RSI</th><th>Recomendación</th><th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
 
-    <section id="detail" class="hidden">
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <h2 id="dTitle">—</h2>
-            <p class="muted" id="dSubtitle"></p>
-          </div>
-          <div class="range" id="rangeBtns">
-            <button data-range="1mo">1M</button>
-            <button data-range="3mo">3M</button>
-            <button data-range="6mo" class="active">6M</button>
-            <button data-range="1y">1A</button>
-            <button data-range="2y">2A</button>
-          </div>
+      <div class="hero-copy">
+        <span class="pill"><span class="dot live"></span> Datos reales del mercado</span>
+        <h1>Analiza el NASDAQ con <span class="grad">decisiones basadas en datos</span></h1>
+        <p>Cotizaciones reales sincronizadas automáticamente, indicadores técnicos y recomendaciones de inversión en un solo panel.</p>
+        <ul class="features">
+          <li><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Sincronización automática cada 15 minutos</li>
+          <li><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Medias móviles, RSI, volatilidad y momentum</li>
+          <li><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Acceso seguro con contraseñas cifradas</li>
+        </ul>
+      </div>
+
+      <div class="hero-chart" aria-hidden="true">
+        <div class="hero-chart-head">
+          <div><span class="muted">NASDAQ-100</span><b>Tendencia</b></div>
+          <span class="chip up">+ análisis técnico</span>
         </div>
-        <div class="chart-box tall"><canvas id="priceChart"></canvas></div>
-        <div class="chart-box short"><canvas id="volumeChart"></canvas></div>
+        <svg viewBox="0 0 400 140" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3b82f6" stop-opacity=".45"/>
+              <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path class="area" d="M0 110 L30 100 L60 104 L90 86 L120 92 L150 70 L180 76 L210 58 L240 64 L270 44 L300 50 L330 30 L360 36 L400 14 L400 140 L0 140Z" fill="url(#hg)"/>
+          <path class="line" d="M0 110 L30 100 L60 104 L90 86 L120 92 L150 70 L180 76 L210 58 L240 64 L270 44 L300 50 L330 30 L360 36 L400 14"/>
+        </svg>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <h2>Recomendación de inversión</h2>
-          <div class="reco" id="recoBox"></div>
-          <ul class="reasons" id="reasons"></ul>
-          <div class="indicators" id="indicators"></div>
-          <p class="disclaimer">Modelo académico de análisis técnico. No constituye asesoría financiera.</p>
+      <p class="hero-foot">Proyecto académico · Fuente: Yahoo Finance (respaldo Stooq)</p>
+    </div>
+
+    <div class="auth-panel">
+      <div class="auth-card">
+        <div class="auth-mobile-brand">
+          <span class="logo-mark"><svg viewBox="0 0 24 24"><path d="M3 17l6-7 4 4 8-10"/><path d="M15 4h6v6"/></svg></span>
+          <span>NASDAQ <b>Insight</b></span>
+        </div>
+        <h2 id="authTitle">Bienvenido de nuevo</h2>
+        <p class="muted" id="authSubtitle">Ingresa tus credenciales para acceder al panel.</p>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-mode="login" role="tab">Iniciar sesión</button>
+          <button type="button" class="tab" data-mode="register" role="tab">Crear cuenta</button>
         </div>
 
-        <div class="card">
-          <h2>Simulador de inversión</h2>
-          <form id="simForm" class="sim-form">
-            <label>Monto a invertir (USD)
-              <input id="simAmount" type="number" min="0.01" step="0.01" value="1000.00" required>
-            </label>
-            <label>Fecha de compra
-              <input id="simDate" type="date" required>
-            </label>
-            <button type="submit">Calcular</button>
+        <form id="authForm" novalidate>
+          <label class="field register-only hidden">
+            <span>Nombre completo</span>
+            <div class="input-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>
+              <input id="authName" maxlength="80" autocomplete="name" placeholder="Juan Pérez">
+            </div>
+          </label>
+          <label class="field">
+            <span>Correo electrónico</span>
+            <div class="input-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+              <input id="authEmail" type="email" maxlength="120" autocomplete="email" placeholder="tu@correo.com" required>
+            </div>
+          </label>
+          <label class="field">
+            <span>Contraseña</span>
+            <div class="input-icon">
+              <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              <input id="authPassword" type="password" maxlength="72" autocomplete="current-password" placeholder="••••••••" required>
+              <button type="button" class="eye" id="togglePwd" aria-label="Mostrar contraseña">
+                <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <small class="hint register-only hidden">Mínimo 8 caracteres, con letras y números.</small>
+          </label>
+
+          <label class="check login-only">
+            <input type="checkbox" id="remember" checked> <span>Mantener la sesión iniciada</span>
+          </label>
+
+          <p class="form-error hidden" id="authError" role="alert"></p>
+
+          <button type="submit" class="btn-primary btn-block" id="authSubmit">
+            <span>Ingresar</span>
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <div class="divider login-only"><span>o</span></div>
+        <button type="button" class="btn-ghost btn-block login-only" id="demoBtn">
+          <svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+          Entrar con la cuenta demo
+        </button>
+
+        <p class="secure-note">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>
+          Conexión protegida · contraseñas cifradas con scrypt
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= APLICACIÓN ================= -->
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <span class="logo-mark"><svg viewBox="0 0 24 24"><path d="M3 17l6-7 4 4 8-10"/><path d="M15 4h6v6"/></svg></span>
+        <span>NASDAQ <b>Insight</b></span>
+      </div>
+      <nav>
+        <a href="#panel" class="active"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Panel general</a>
+        <a href="#detail"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Análisis técnico</a>
+        <a href="#simulador"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>Simulador</a>
+      </nav>
+      <div class="side-card">
+        <div class="market"><span class="dot" id="marketDot"></span><b id="marketStatus">Mercado</b></div>
+        <p class="muted small" id="marketHours">Horario NASDAQ: 9:30 – 16:00 (Nueva York)</p>
+        <p class="muted small" id="lastSync">Última sincronización: —</p>
+      </div>
+    </aside>
+
+    <div class="main-col">
+      <header class="topbar">
+        <div class="page-title">
+          <h1>Panel general</h1>
+          <p class="muted small" id="greeting">Resumen del mercado</p>
+        </div>
+        <div class="actions">
+          <form id="addForm" class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <input id="addSymbol" maxlength="10" placeholder="Agregar símbolo (ej: AMD)" autocomplete="off" required>
+            <button type="submit">Agregar</button>
           </form>
-          <div id="simResult" class="sim-result"></div>
-          <h3>Historial de recomendaciones</h3>
-          <div class="chart-box short"><canvas id="scoreChart"></canvas></div>
+          <button id="syncBtn" class="btn-ghost">
+            <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>
+            <span>Sincronizar</span>
+          </button>
+          <div class="user-menu">
+            <button class="avatar-btn" id="userBtn" aria-haspopup="true">
+              <span class="avatar" id="userAvatar">—</span>
+              <span class="user-meta"><b id="userName">—</b><small id="userRole">—</small></span>
+              <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="dropdown hidden" id="userDropdown">
+              <div class="dd-head"><b id="ddName">—</b><small id="ddEmail">—</small></div>
+              <button id="logoutBtn"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Cerrar sesión</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
-  </main>
+      </header>
+
+      <div class="ticker" aria-label="Cotizaciones"><div class="ticker-track" id="ticker"></div></div>
+
+      <main>
+        <section class="kpis" id="kpis"></section>
+
+        <section class="card" id="panel">
+          <div class="card-head">
+            <div>
+              <h2>Acciones en seguimiento</h2>
+              <p class="muted small">Valores reales del NASDAQ · se actualizan automáticamente</p>
+            </div>
+            <span class="live-tag"><span class="dot live"></span>EN VIVO</span>
+          </div>
+          <div class="table-wrap">
+            <table id="stocksTable">
+              <thead>
+                <tr>
+                  <th>Símbolo</th><th>Empresa</th><th class="num">Precio (USD)</th>
+                  <th class="num">Cambio</th><th class="num">RSI</th><th>Recomendación</th><th></th>
+                </tr>
+              </thead>
+              <tbody><tr><td colspan="7" class="empty"><span class="spinner"></span> Descargando datos reales del NASDAQ…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="detail" class="hidden">
+          <div class="card">
+            <div class="card-head">
+              <div class="detail-title">
+                <span class="sym-icon" id="dIcon">—</span>
+                <div>
+                  <h2 id="dTitle">—</h2>
+                  <p class="muted small" id="dSubtitle"></p>
+                </div>
+              </div>
+              <div class="range" id="rangeBtns">
+                <button data-range="1mo">1M</button>
+                <button data-range="3mo">3M</button>
+                <button data-range="6mo" class="active">6M</button>
+                <button data-range="1y">1A</button>
+                <button data-range="2y">2A</button>
+              </div>
+            </div>
+            <div class="chart-box tall"><canvas id="priceChart"></canvas></div>
+            <div class="chart-box short"><canvas id="volumeChart"></canvas></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <h2>Recomendación de inversión</h2>
+              <div class="reco" id="recoBox"></div>
+              <ul class="reasons" id="reasons"></ul>
+              <div class="indicators" id="indicators"></div>
+              <p class="disclaimer">Modelo académico de análisis técnico. No constituye asesoría financiera.</p>
+            </div>
+
+            <div class="card" id="simulador">
+              <h2>Simulador de inversión</h2>
+              <form id="simForm" class="sim-form">
+                <label>Monto a invertir (USD)
+                  <input id="simAmount" type="number" min="0.01" step="0.01" value="1000.00" required>
+                </label>
+                <label>Fecha de compra
+                  <input id="simDate" type="date" required>
+                </label>
+                <button type="submit">Calcular</button>
+              </form>
+              <div id="simResult" class="sim-result"></div>
+              <h3>Historial de recomendaciones</h3>
+              <div class="chart-box short"><canvas id="scoreChart"></canvas></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

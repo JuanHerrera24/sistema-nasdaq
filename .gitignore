@@ -5,3 +5,4 @@ CREDENCIALES-MYSQL.txt
 coverage/
 
 .vercel
+.claude/

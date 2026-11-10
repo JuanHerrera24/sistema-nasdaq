@@ -17,7 +17,7 @@ let db;
 
 // Deja la "base de datos" como recién creada con schema.sql (útil en pruebas)
 function reset() {
-  db = { stocks: [], history: new Map(), quotes: new Map(), recommendations: [], syncLog: [], seq: { stock: 0, reco: 0, log: 0 } };
+  db = { stocks: [], history: new Map(), quotes: new Map(), recommendations: [], syncLog: [], users: [], seq: { stock: 0, reco: 0, log: 0, user: 0 } };
   for (const [symbol, name] of INITIAL_STOCKS) {
     db.stocks.push({ id: ++db.seq.stock, symbol, name, exchange: null, currency: 'USD', active: 1, created_at: new Date() });
   }
@@ -128,6 +128,25 @@ async function getLastSync() {
   return copy(db.syncLog.at(-1));
 }
 
+// ---------------- Usuarios (login) ----------------
+async function findUserByEmail(email) {
+  return copy(db.users.find((u) => u.email === email));
+}
+
+async function createUser({ fullName, email, passwordHash, role = 'analista' }) {
+  if (db.users.some((u) => u.email === email)) {
+    throw Object.assign(new Error('Duplicate entry'), { code: 'ER_DUP_ENTRY' });
+  }
+  const user = { id: ++db.seq.user, fullName, email, passwordHash, role, lastLogin: null };
+  db.users.push(user);
+  return { id: user.id, fullName, email, role };
+}
+
+async function touchLogin(userId) {
+  const u = db.users.find((x) => x.id === userId);
+  if (u) u.lastLogin = new Date();
+}
+
 module.exports = {
   mode: 'memory',
   reset,
@@ -135,4 +154,5 @@ module.exports = {
   saveQuote, saveHistory, getHistory, saveRecommendation,
   getDashboard, getRecommendationHistory,
   startSyncLog, finishSyncLog, getLastSync,
+  findUserByEmail, createUser, touchLogin,
 };

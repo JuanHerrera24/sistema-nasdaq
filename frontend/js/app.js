@@ -1,5 +1,5 @@
 // Lógica de la interfaz (capa de presentación)
-const state = { symbol: null, range: '6mo', charts: {} };
+const state = { symbol: null, range: '6mo', charts: {}, timer: null, user: null };
 
 const $ = (sel) => document.querySelector(sel);
 const usd = (n) => (n == null ? '—' : n.toLocaleString('es-ES', { style: 'currency', currency: 'USD' }));
@@ -21,6 +21,7 @@ async function loadDashboard() {
     const { stocks, lastSync } = await API.dashboard();
     renderKpis(stocks);
     renderTable(stocks);
+    renderTicker(stocks);
     $('#lastSync').textContent = lastSync?.finished_at
       ? `Última sincronización: ${new Date(lastSync.finished_at).toLocaleString('es-ES')} · ${lastSync.symbols_ok} acciones`
       : 'Última sincronización: en curso...';
@@ -30,20 +31,37 @@ async function loadDashboard() {
   }
 }
 
+const ICONS = {
+  list: '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  pulse: '<svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+  up: '<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg>',
+  hold: '<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>',
+  down: '<svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 9v8H9"/></svg>',
+};
+
 function renderKpis(stocks) {
   const count = (r) => stocks.filter((s) => s.recommendation === r).length;
   const withChange = stocks.filter((s) => s.changePercent != null);
   const avg = withChange.reduce((a, s) => a + s.changePercent, 0) / (withChange.length || 1);
   const items = [
-    ['Acciones seguidas', stocks.length, ''],
-    ['Variación promedio hoy', `${avg >= 0 ? '+' : ''}${fmt(avg)}%`, avg >= 0 ? 'up' : 'down'],
-    ['Recomendación COMPRAR', count('COMPRAR'), 'up'],
-    ['Recomendación MANTENER', count('MANTENER'), ''],
-    ['Recomendación VENDER', count('VENDER'), 'down'],
+    ['Acciones seguidas', stocks.length, '', 'list', '--primary'],
+    ['Variación promedio hoy', `${avg >= 0 ? '+' : ''}${fmt(avg)}%`, avg >= 0 ? 'up' : 'down', 'pulse', avg >= 0 ? '--up' : '--down'],
+    ['Recomendación COMPRAR', count('COMPRAR'), 'up', 'up', '--buy'],
+    ['Recomendación MANTENER', count('MANTENER'), '', 'hold', '--hold'],
+    ['Recomendación VENDER', count('VENDER'), 'down', 'down', '--sell'],
   ];
   $('#kpis').innerHTML = items
-    .map(([l, v, c]) => `<div class="kpi"><div class="label">${l}</div><div class="value ${c}">${v}</div></div>`)
+    .map(([l, v, c, icon, color]) => `<div class="kpi" style="--kpi: var(${color})"><div class="label">${ICONS[icon]}${l}</div><div class="value ${c}">${v}</div></div>`)
     .join('');
+}
+
+function renderTicker(stocks) {
+  const items = stocks.filter((s) => s.price != null).map((s) => {
+    const cls = s.change >= 0 ? 'up' : 'down';
+    return `<span class="tick"><b>${esc(s.symbol)}</b>${usd(s.price)}<span class="${cls}">${s.change >= 0 ? '▲' : '▼'} ${fmt(Math.abs(s.changePercent))}%</span></span>`;
+  }).join('');
+  // Se duplica para que la cinta se desplace sin cortes
+  $('#ticker').innerHTML = items + items;
 }
 
 function renderTable(stocks) {
@@ -56,10 +74,10 @@ function renderTable(stocks) {
     const cls = s.change == null ? '' : s.change >= 0 ? 'up' : 'down';
     const sign = s.change > 0 ? '+' : '';
     return `<tr data-symbol="${esc(s.symbol)}" class="${s.symbol === state.symbol ? 'selected' : ''}">
-      <td class="sym">${esc(s.symbol)}</td>
-      <td>${esc(s.name)}</td>
+      <td><span class="sym"><span class="sym-badge">${esc(s.symbol.slice(0, 4))}</span>${esc(s.symbol)}</span></td>
+      <td class="company">${esc(s.name)}</td>
       <td class="num">${usd(s.price)}</td>
-      <td class="num ${cls}">${s.change == null ? '—' : `${sign}${fmt(s.change)} (${sign}${fmt(s.changePercent)}%)`}</td>
+      <td class="num">${s.change == null ? '—' : `<span class="chg ${cls}">${sign}${fmt(s.change)} (${sign}${fmt(s.changePercent)}%)</span>`}</td>
       <td class="num">${fmt(s.rsi14, 1)}</td>
       <td>${s.recommendation ? `<span class="badge ${s.recommendation}">${s.recommendation}</span>` : '—'}</td>
       <td><button class="link-btn" data-remove="${esc(s.symbol)}" title="Dejar de seguir">✕</button></td>
@@ -76,6 +94,7 @@ async function selectStock(symbol) {
     const d = await API.detail(symbol, state.range);
     $('#detail').classList.remove('hidden');
     $('#dTitle').textContent = `${d.symbol} · ${d.name || ''}`;
+    $('#dIcon').textContent = d.symbol.slice(0, 4);
     const q = d.quote || {};
     $('#dSubtitle').textContent = `${d.exchange || 'NASDAQ'} · ${usd(q.price)} · actualizado ${
       q.marketTime ? new Date(q.marketTime).toLocaleString('es-ES') : '—'}`;
@@ -230,7 +249,7 @@ $('#addForm').addEventListener('submit', async (e) => {
 $('#syncBtn').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;
-  btn.textContent = 'Sincronizando...';
+  btn.querySelector('span').textContent = 'Sincronizando…';
   try {
     const r = await API.sync();
     toast(r.skipped ? r.message : `Sincronizadas ${r.ok} acciones${r.failed ? `, ${r.failed} con error` : ''}`);
@@ -238,7 +257,7 @@ $('#syncBtn').addEventListener('click', async (e) => {
     if (state.symbol) selectStock(state.symbol);
   } catch (err) { toast(err.message, true); }
   btn.disabled = false;
-  btn.textContent = 'Sincronizar ahora';
+  btn.querySelector('span').textContent = 'Sincronizar';
 });
 
 $('#simForm').addEventListener('submit', async (e) => {
@@ -254,6 +273,70 @@ $('#simForm').addEventListener('submit', async (e) => {
   } catch (err) { toast(err.message, true); }
 });
 
-// Refresco automático de la interfaz cada 60 segundos
-loadDashboard();
-setInterval(loadDashboard, 60_000);
+// ---------------- Sesión, usuario y estado del mercado ----------------
+function marketStatus() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date()).map((p) => [p.type, p.value]));
+  const minutes = (Number(parts.hour) % 24) * 60 + Number(parts.minute);
+  const open = !['Sat', 'Sun'].includes(parts.weekday) && minutes >= 570 && minutes < 960;
+  $('#marketDot').className = `dot ${open ? 'live' : 'closed'}`;
+  $('#marketStatus').textContent = open ? 'Mercado abierto' : 'Mercado cerrado';
+  $('#marketHours').textContent = `Nueva York ${String(Number(parts.hour) % 24).padStart(2, '0')}:${parts.minute} · horario 9:30 – 16:00`;
+}
+
+function renderUser(user) {
+  const first = user.fullName.split(' ')[0];
+  $('#userAvatar').textContent = user.fullName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
+  $('#userName').textContent = first;
+  $('#userRole').textContent = user.role;
+  $('#ddName').textContent = user.fullName;
+  $('#ddEmail').textContent = user.email;
+  const h = new Date().getHours();
+  $('#greeting').textContent = `${h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'}, ${first} · resumen del mercado`;
+}
+
+function startApp(user) {
+  state.user = user;
+  $('#authView').classList.add('hidden');
+  $('#appView').classList.remove('hidden');
+  renderUser(user);
+  marketStatus();
+  loadDashboard();
+  // Refresco automático de la interfaz cada 60 segundos
+  clearInterval(state.timer);
+  state.timer = setInterval(() => { loadDashboard(); marketStatus(); }, 60_000);
+}
+
+function logout(message) {
+  clearInterval(state.timer);
+  API.session.clear();
+  state.symbol = null;
+  $('#detail').classList.add('hidden');
+  $('#userDropdown').classList.add('hidden');
+  Auth.show(message);
+}
+
+$('#userBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('#userDropdown').classList.toggle('hidden');
+});
+document.addEventListener('click', () => $('#userDropdown').classList.add('hidden'));
+$('#logoutBtn').addEventListener('click', () => logout());
+
+document.querySelectorAll('.sidebar nav a').forEach((a) => a.addEventListener('click', () => {
+  document.querySelectorAll('.sidebar nav a').forEach((x) => x.classList.toggle('active', x === a));
+}));
+
+API.onUnauthorized((msg) => logout(msg || 'Tu sesión expiró, inicia sesión de nuevo'));
+Auth.init(startApp);
+
+// Si ya hay una sesión guardada se valida con el servidor
+(async () => {
+  if (!API.session.get()) return Auth.show();
+  try {
+    startApp((await API.me()).user);
+  } catch {
+    if ($('#authView').classList.contains('hidden')) Auth.show();
+  }
+})();

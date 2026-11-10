@@ -191,10 +191,34 @@ El resultado se ve en la pestaña **Actions** del repositorio.
 
 ---
 
+## Inicio de sesión
+
+El sistema exige iniciar sesión. Se puede **crear una cuenta** desde la pantalla de login o entrar con la
+**cuenta demo** (botón "Entrar con la cuenta demo"):
+
+| Correo | Contraseña |
+|--------|-----------|
+| `demo@nasdaq.com` | `Demo2026` |
+
+- Contraseñas guardadas como hash **scrypt** con sal aleatoria (tabla `users`, nunca en texto plano).
+- Sesión con token firmado HMAC-SHA256 (formato JWT) que expira a las 8 horas. Variable `JWT_SECRET`.
+- Máximo 10 intentos de login por minuto por IP (protección contra fuerza bruta).
+- La cuenta demo se configura con `DEMO_EMAIL` / `DEMO_PASSWORD` o se desactiva con `DEMO_DISABLED=true`.
+
+> **Bases creadas antes del login**: ejecutar una vez `mysql -u root -p < database/migrations/001_usuarios.sql`
+> para agregar la tabla `users`.
+
+---
+
 ## API REST
+
+Todas las rutas (excepto `/api/health` y `/api/auth/*`) requieren la cabecera `Authorization: Bearer <token>`.
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
+| POST | `/api/auth/register` `{ "fullName", "email", "password" }` | Crea una cuenta y devuelve el token |
+| POST | `/api/auth/login` `{ "email", "password" }` | Inicia sesión y devuelve el token |
+| GET | `/api/auth/me` | Usuario de la sesión actual |
 | GET | `/api/stocks` | Panel: acciones seguidas, último precio y recomendación |
 | GET | `/api/stocks/:symbol?range=6mo` | Detalle, gráfico (precio + medias móviles), indicadores, recomendación |
 | POST | `/api/stocks` `{ "symbol": "AMD" }` | Agrega una acción al seguimiento automático |

@@ -7,6 +7,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const stockRoutes = require('./routes/stockRoutes');
+const authRoutes = require('./routes/authRoutes');
+const { requireAuth } = require('./controllers/authController');
 const repo = require('./repositories/stockRepository');
 
 const app = express();
@@ -20,7 +22,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:'],
     },
   },
@@ -31,7 +34,9 @@ app.use('/api', rateLimit({ windowMs: 60_000, limit: 120 }));
 
 // --- API REST ---
 app.get('/api/health', (req, res) => res.json({ status: 'ok', dataStore: repo.mode, time: new Date().toISOString() }));
-app.use('/api', stockRoutes);
+app.use('/api/auth', authRoutes);
+// Todo lo demás de la API requiere haber iniciado sesión
+app.use('/api', requireAuth, stockRoutes);
 
 // --- FRONTEND (capa de presentación) servido como archivos estáticos ---
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend')));

@@ -9,8 +9,8 @@ const path = require('path');
 
 const schema = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'database', 'schema.sql'), 'utf8');
 
-test('schema.sql crea las 5 tablas del sistema', () => {
-  for (const table of ['stocks', 'price_history', 'quotes', 'recommendations', 'sync_log']) {
+test('schema.sql crea las 6 tablas del sistema', () => {
+  for (const table of ['stocks', 'price_history', 'quotes', 'recommendations', 'sync_log', 'users']) {
     assert.match(schema, new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\b`), `falta la tabla ${table}`);
   }
 });
@@ -21,6 +21,13 @@ test('schema.sql define límites de caracteres (SP-106) y precios DECIMAL (SP-10
   assert.match(schema, /CHECK \(symbol REGEXP/);
   assert.match(schema, /close_price DECIMAL\(14,4\)/);
   assert.doesNotMatch(schema, /\b(FLOAT|DOUBLE)\b/i, 'los precios no deben usar FLOAT/DOUBLE');
+});
+
+test('schema.sql define la tabla de usuarios con correo único y hash de contraseña', () => {
+  assert.match(schema, /email\s+VARCHAR\(120\)\s+NOT NULL/);
+  assert.match(schema, /CONSTRAINT uq_users_email UNIQUE \(email\)/);
+  assert.match(schema, /password_hash\s+VARCHAR\(200\)/);
+  assert.doesNotMatch(schema, /\bpassword\s+VARCHAR/, 'no debe existir una columna de contraseña en texto plano');
 });
 
 test('schema.sql define llaves foráneas con borrado en cascada', () => {
@@ -44,14 +51,18 @@ test.describe('MySQL real', { skip: !mysqlEnabled && 'defina TEST_MYSQL=1 para p
   });
 
   test.after(async () => {
-    await pool.query("DELETE FROM stocks WHERE symbol LIKE 'TST%'");
-    await pool.end();
+    try {
+      await pool.query("DELETE FROM stocks WHERE symbol LIKE 'TST%'");
+      await pool.query("DELETE FROM users WHERE email LIKE 'tst%@prueba.com'");
+    } finally {
+      await pool.end();
+    }
   });
 
-  test('las 5 tablas existen', async () => {
+  test('las 6 tablas existen', async () => {
     const [rows] = await pool.query('SHOW TABLES');
     const names = rows.map((r) => Object.values(r)[0]);
-    for (const t of ['stocks', 'price_history', 'quotes', 'recommendations', 'sync_log']) assert.ok(names.includes(t), t);
+    for (const t of ['stocks', 'price_history', 'quotes', 'recommendations', 'sync_log', 'users']) assert.ok(names.includes(t), t);
   });
 
   test('se cargaron las 8 acciones iniciales', async () => {
@@ -98,5 +109,13 @@ test.describe('MySQL real', { skip: !mysqlEnabled && 'defina TEST_MYSQL=1 para p
     await pool.query('DELETE FROM stocks WHERE id = ?', [s.id]);
     const [[{ n }]] = await pool.query('SELECT COUNT(*) AS n FROM recommendations WHERE stock_id = ?', [s.id]);
     assert.strictEqual(Number(n), 0);
+  });
+
+  test('usuarios: correo único y CHECK de formato', async () => {
+    await pool.query("DELETE FROM users WHERE email LIKE 'tst%@prueba.com'");
+    const u = await repo.createUser({ fullName: 'Tester', email: 'tst1@prueba.com', passwordHash: 'scrypt$x$y' });
+    assert.strictEqual((await repo.findUserByEmail('tst1@prueba.com')).id, u.id);
+    await assert.rejects(repo.createUser({ fullName: 'Tester', email: 'tst1@prueba.com', passwordHash: 'h' }), (e) => e.code === 'ER_DUP_ENTRY');
+    await assert.rejects(pool.query("INSERT INTO users (full_name, email, password_hash) VALUES ('Tester', 'tst-sin-arroba', 'h')"), /chk_users_email|Check constraint/i);
   });
 });
