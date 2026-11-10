@@ -1,0 +1,8 @@
+node_modules
+**/node_modules
+.env
+backend/.env
+CREDENCIALES-MYSQL.txt
+INICIAR.bat
+coverage
+.github

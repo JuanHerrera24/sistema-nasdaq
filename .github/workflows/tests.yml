@@ -1,0 +1,64 @@
+# Pruebas automatizadas: se ejecutan solas en cada push y pull request.
+name: Pruebas automatizadas
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unit-and-api:
+    name: Tests unitarios y de API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Tests unitarios
+        run: npm run test:unit
+      - name: Pruebas de la API REST
+        run: npm run test:api
+
+  database:
+    name: Pruebas de base de datos (MySQL 8)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      TEST_MYSQL: '1'
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: nasdaq_system
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Crear la base de datos con schema.sql
+        run: mysql -h 127.0.0.1 -u root -proot < database/schema.sql
+      - run: npm ci
+        working-directory: backend
+      - name: Pruebas de la capa de datos
+        run: npm run test:db
+        working-directory: backend

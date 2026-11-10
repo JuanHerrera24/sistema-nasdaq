@@ -1,0 +1,29 @@
+{
+  "name": "nasdaq-backend",
+  "version": "1.0.0",
+  "description": "Capa de lógica de negocio: consume NASDAQ, analiza y genera recomendaciones de inversión",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "sync": "node src/jobs/runOnce.js",
+    "test": "node --test tests/unit/ tests/integration/ tests/database/",
+    "test:unit": "node --test tests/unit/",
+    "test:api": "node --test tests/integration/",
+    "test:db": "node --test tests/database/",
+    "test:coverage": "node --test --experimental-test-coverage tests/unit/ tests/integration/ tests/database/"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.11.5",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
