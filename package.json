@@ -1,0 +1,21 @@
+{
+  "name": "sistema-nasdaq",
+  "private": true,
+  "description": "Despliegue en Vercel: instala las dependencias del backend para la función api/index.js",
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "test": "npm test --prefix backend"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.11.5",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
