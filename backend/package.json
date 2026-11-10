@@ -8,11 +8,11 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "sync": "node src/jobs/runOnce.js",
-    "test": "node --test tests/unit/ tests/integration/ tests/database/",
-    "test:unit": "node --test tests/unit/",
-    "test:api": "node --test tests/integration/",
-    "test:db": "node --test tests/database/",
-    "test:coverage": "node --test --experimental-test-coverage tests/unit/ tests/integration/ tests/database/"
+    "test": "node --test \"tests/unit/**/*.test.js\" \"tests/integration/**/*.test.js\" \"tests/database/**/*.test.js\"",
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
+    "test:api": "node --test \"tests/integration/**/*.test.js\"",
+    "test:db": "node --test \"tests/database/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage \"tests/unit/**/*.test.js\" \"tests/integration/**/*.test.js\" \"tests/database/**/*.test.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",
